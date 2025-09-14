@@ -1,6 +1,6 @@
 use petgraph::graph::{NodeIndex, UnGraph};
 use petgraph::visit::EdgeRef;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone)]
 pub struct ProductNode {
@@ -137,5 +137,82 @@ impl RecommendationGraph {
         } else {
             false
         }
+    }
+
+    pub fn get_recommendations(&self, product_id: u64, limit: usize) -> Vec<(u64, f32)> {
+        let connections = self.get_connections(product_id);
+
+        let mut recommendations: Vec<(u64, f32)> = connections
+            .into_iter()
+            .map(|(id, weight, relation_type)| {
+                let type_multiplier = match relation_type {
+                    RelationType::BoughtTogether => 1.5,
+                    RelationType::Similar => 1.3,
+                    RelationType::SameBrand => 1.1,
+                    RelationType::SameCategory => 1.0,
+                };
+                (id, weight * type_multiplier)
+            })
+            .collect();
+
+        recommendations.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        recommendations.truncate(limit);
+        recommendations
+    }
+
+    pub fn get_recommendations_depth_2(&self, product_id: u64, limit: usize) -> Vec<(u64, f32)> {
+        let mut scores: HashMap<u64, f32> = HashMap::new();
+        let mut visited = HashSet::new();
+        visited.insert(product_id);
+
+        let direct_connections = self.get_connections(product_id);
+        for (connected_id, weight, relation_type) in direct_connections {
+            let type_multiplier = match relation_type {
+                RelationType::BoughtTogether => 1.5,
+                RelationType::Similar => 1.3,
+                RelationType::SameBrand => 1.1,
+                RelationType::SameCategory => 1.0,
+            };
+
+            let score = weight * type_multiplier;
+            scores.insert(connected_id, score);
+            visited.insert(connected_id);
+
+            let second_level = self.get_connections(connected_id);
+            for (second_id, second_weight, second_relation) in second_level {
+                if !visited.contains(&second_id) {
+                    let second_multiplier = match second_relation {
+                        RelationType::BoughtTogether => 0.75,
+                        RelationType::Similar => 0.65,
+                        RelationType::SameBrand => 0.55,
+                        RelationType::SameCategory => 0.5,
+                    };
+
+                    let second_score = score * 0.5 * second_weight * second_multiplier;
+                    *scores.entry(second_id).or_insert(0.0) += second_score;
+                }
+            }
+        }
+
+        let mut recommendations: Vec<(u64, f32)> = scores.into_iter().collect();
+        recommendations.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        recommendations.truncate(limit);
+        recommendations
+    }
+
+    pub fn get_similar_products(&self, product_id: u64) -> Vec<u64> {
+        self.get_connections(product_id)
+            .into_iter()
+            .filter(|(_, _, relation_type)| *relation_type == RelationType::Similar)
+            .map(|(id, _, _)| id)
+            .collect()
+    }
+
+    pub fn get_frequently_bought_together(&self, product_id: u64) -> Vec<u64> {
+        self.get_connections(product_id)
+            .into_iter()
+            .filter(|(_, _, relation_type)| *relation_type == RelationType::BoughtTogether)
+            .map(|(id, _, _)| id)
+            .collect()
     }
 }

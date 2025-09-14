@@ -155,4 +155,48 @@ fn main() {
     }
 
     println!("\n✅ Sistema de relações no grafo funcionando!");
+
+    println!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    println!("🎯 Algoritmo de Recomendação");
+    println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+    println!("\n📌 Recomendações para Produto 1 (Notebook Dell):");
+    let recommendations = graph.get_recommendations(1, 5);
+    for (product_id, score) in &recommendations {
+        if let Some(product) = index.get_product(*product_id) {
+            println!("  → {} | Score: {:.2}", product.name, score);
+        }
+    }
+
+    println!("\n📌 Produtos similares ao Produto 1:");
+    let similar = graph.get_similar_products(1);
+    for id in similar {
+        if let Some(product) = index.get_product(id) {
+            println!("  → {}", product.name);
+        }
+    }
+
+    println!("\n📌 Frequentemente comprados com Produto 1:");
+    let bought_together = graph.get_frequently_bought_together(1);
+    for id in bought_together {
+        if let Some(product) = index.get_product(id) {
+            println!("  → {}", product.name);
+        }
+    }
+
+    println!("\n📌 Recomendações de 2º grau (amigos de amigos):");
+    graph.connect_bought_together(2, 3, 0.6);
+    let depth2_recommendations = graph.get_recommendations_depth_2(1, 5);
+    println!("  Conexão adicionada: Mouse → Camiseta (para testar 2º grau)");
+    for (product_id, score) in depth2_recommendations {
+        if let Some(product) = index.get_product(product_id) {
+            println!("  → {} | Score combinado: {:.3}", product.name, score);
+        }
+    }
+
+    println!("\n✅ Algoritmo de recomendação baseado em grafo implementado!");
+    println!("\n📊 Complexidade:");
+    println!("  • Recomendações diretas: O(E) onde E = arestas do nó");
+    println!("  • Recomendações 2º grau: O(E²) no pior caso");
+    println!("  • Busca por tipo: O(E) com filtragem");
 }
