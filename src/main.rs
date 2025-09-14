@@ -1,4 +1,4 @@
-use megastore_search::{Product, Category, ProductIndex};
+use megastore_search::{Product, Category, ProductIndex, RecommendationGraph};
 
 fn main() {
     println!("🛍️ MegaStore Search System");
@@ -108,4 +108,20 @@ fn main() {
 
     println!("\n✅ Sistema de indexação funcionando com sucesso!");
     println!("Complexidade de busca: O(1) para acesso direto ao índice");
+
+    println!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    println!("📊 Testando Grafo de Recomendações");
+    println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+    let mut graph = RecommendationGraph::new();
+
+    graph.add_product(1, "Electronics".to_string());
+    graph.add_product(2, "Electronics".to_string());
+    graph.add_product(3, "Clothing".to_string());
+    graph.add_product(4, "Electronics".to_string());
+
+    println!("Nós no grafo: {}", graph.product_count());
+    println!("Arestas no grafo: {}", graph.edge_count());
+
+    println!("\n✅ Estrutura básica do grafo criada com sucesso!");
 }
