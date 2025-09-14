@@ -120,8 +120,39 @@ fn main() {
     graph.add_product(3, "Clothing".to_string());
     graph.add_product(4, "Electronics".to_string());
 
-    println!("Nós no grafo: {}", graph.product_count());
-    println!("Arestas no grafo: {}", graph.edge_count());
+    println!("📊 Grafo inicial:");
+    println!("  • Nós (produtos): {}", graph.product_count());
+    println!("  • Arestas (relações): {}", graph.edge_count());
 
-    println!("\n✅ Estrutura básica do grafo criada com sucesso!");
+    println!("\n🔗 Criando relações entre produtos:");
+
+    graph.connect_similar_products(1, 4, 0.85);
+    println!("  ✓ Notebooks Dell e Asus são similares (85% similaridade)");
+
+    graph.connect_bought_together(1, 2, 0.75);
+    println!("  ✓ Notebook Dell e Mouse frequentemente comprados juntos (75%)");
+
+    graph.connect_same_category(2, 4);
+    println!("  ✓ Mouse e Notebook Asus na mesma categoria");
+
+    graph.connect_same_brand(1, 2);
+    println!("  ✓ Produtos 1 e 2 conectados por marca");
+
+    println!("\n📊 Grafo atualizado:");
+    println!("  • Nós (produtos): {}", graph.product_count());
+    println!("  • Arestas (relações): {}", graph.edge_count());
+
+    println!("\n🔍 Conexões do produto 1 (Notebook Dell):");
+    let connections = graph.get_connections(1);
+    for (product_id, weight, relation_type) in connections {
+        let relation_str = match relation_type {
+            megastore_search::graph::RelationType::Similar => "Similar",
+            megastore_search::graph::RelationType::BoughtTogether => "Comprado junto",
+            megastore_search::graph::RelationType::SameCategory => "Mesma categoria",
+            megastore_search::graph::RelationType::SameBrand => "Mesma marca",
+        };
+        println!("  → Produto {} | Peso: {:.2} | Tipo: {}", product_id, weight, relation_str);
+    }
+
+    println!("\n✅ Sistema de relações no grafo funcionando!");
 }
