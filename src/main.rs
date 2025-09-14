@@ -1,4 +1,4 @@
-use megastore_search::{Product, Category, ProductIndex, RecommendationGraph};
+use megastore_search::{Product, Category, ProductIndex, RecommendationGraph, SearchEngine};
 
 fn main() {
     println!("🛍️ MegaStore Search System");
@@ -199,4 +199,88 @@ fn main() {
     println!("  • Recomendações diretas: O(E) onde E = arestas do nó");
     println!("  • Recomendações 2º grau: O(E²) no pior caso");
     println!("  • Busca por tipo: O(E) com filtragem");
+
+    println!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    println!("🔍 Motor de Busca Integrado");
+    println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+    let mut search_engine = SearchEngine::new();
+
+    let mut se_product1 = Product::new(
+        1,
+        "Notebook Dell Inspiron".to_string(),
+        "Notebook para trabalho e estudos".to_string(),
+        "Dell".to_string(),
+        Category::Electronics,
+        3500.0,
+    );
+    se_product1.add_tag("laptop".to_string());
+    se_product1.rating = 4.5;
+
+    let mut se_product2 = Product::new(
+        2,
+        "Mouse Gamer Logitech".to_string(),
+        "Mouse com RGB e alta precisão".to_string(),
+        "Logitech".to_string(),
+        Category::Electronics,
+        250.0,
+    );
+    se_product2.add_tag("gaming".to_string());
+    se_product2.rating = 4.8;
+
+    let mut se_product3 = Product::new(
+        3,
+        "Camiseta Nike Dri-Fit".to_string(),
+        "Camiseta esportiva com tecnologia Dri-Fit".to_string(),
+        "Nike".to_string(),
+        Category::Clothing,
+        120.0,
+    );
+    se_product3.add_tag("esporte".to_string());
+    se_product3.rating = 4.3;
+
+    let mut se_product4 = Product::new(
+        4,
+        "Notebook Asus Vivobook".to_string(),
+        "Notebook fino e leve para o dia a dia".to_string(),
+        "Asus".to_string(),
+        Category::Electronics,
+        2800.0,
+    );
+    se_product4.add_tag("laptop".to_string());
+    se_product4.rating = 4.2;
+
+    search_engine.add_product(se_product1);
+    search_engine.add_product(se_product2);
+    search_engine.add_product(se_product3);
+    search_engine.add_product(se_product4);
+
+    println!("\n📊 Status do motor de busca:");
+    println!("  • Produtos indexados: {}", search_engine.get_product_count());
+    let (nodes, edges) = search_engine.get_graph_stats();
+    println!("  • Grafo: {} nós, {} arestas", nodes, edges);
+
+    println!("\n🔍 Busca básica por 'notebook':");
+    let results = search_engine.basic_search("notebook");
+    for (i, result) in results.iter().enumerate().take(3) {
+        println!("  {}. {} | Score: {:.2} | Tipo: {:?}",
+                 i+1, result.product.name, result.score, result.match_type);
+    }
+
+    println!("\n🔍 Busca por categoria Electronics:");
+    let category_results = search_engine.search_by_category(&Category::Electronics);
+    for (i, result) in category_results.iter().enumerate().take(3) {
+        println!("  {}. {} | Score: {:.2} | Rating: ⭐{:.1}",
+                 i+1, result.product.name, result.score, result.product.rating);
+    }
+
+    println!("\n🔍 Busca por marca 'Dell':");
+    let brand_results = search_engine.search_by_brand("Dell");
+    for (i, result) in brand_results.iter().enumerate() {
+        println!("  {}. {} | Preço: R$ {:.2}",
+                 i+1, result.product.name, result.product.price);
+    }
+
+    println!("\n✅ Motor de busca básico integrado funcionando!");
+    println!("Próximos passos: filtros avançados e recomendações integradas");
 }
