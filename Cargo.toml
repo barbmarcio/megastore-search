@@ -14,3 +14,15 @@ criterion = "0.5"
 [dev-dependencies]
 rand = "0.8"
 proptest = "1.4"
+
+[[bench]]
+name = "search_benchmark"
+harness = false
+
+[[bench]]
+name = "indexing_benchmark"
+harness = false
+
+[[bench]]
+name = "graph_benchmark"
+harness = false
