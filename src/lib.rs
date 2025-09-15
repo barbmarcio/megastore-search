@@ -6,4 +6,4 @@ pub mod search;
 pub use models::{Product, Category};
 pub use indexing::ProductIndex;
 pub use graph::RecommendationGraph;
-pub use search::SearchEngine;
+pub use search::{SearchEngine, SearchFilters};

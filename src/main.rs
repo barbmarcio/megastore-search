@@ -1,4 +1,4 @@
-use megastore_search::{Product, Category, ProductIndex, RecommendationGraph, SearchEngine};
+use megastore_search::{Product, Category, ProductIndex, RecommendationGraph, SearchEngine, SearchFilters};
 
 fn main() {
     println!("🛍️ MegaStore Search System");
@@ -216,6 +216,7 @@ fn main() {
     );
     se_product1.add_tag("laptop".to_string());
     se_product1.rating = 4.5;
+    se_product1.stock = 10;
 
     let mut se_product2 = Product::new(
         2,
@@ -227,6 +228,7 @@ fn main() {
     );
     se_product2.add_tag("gaming".to_string());
     se_product2.rating = 4.8;
+    se_product2.stock = 50;
 
     let mut se_product3 = Product::new(
         3,
@@ -238,6 +240,7 @@ fn main() {
     );
     se_product3.add_tag("esporte".to_string());
     se_product3.rating = 4.3;
+    se_product3.stock = 0; // Produto fora de estoque para testar filtro
 
     let mut se_product4 = Product::new(
         4,
@@ -249,6 +252,7 @@ fn main() {
     );
     se_product4.add_tag("laptop".to_string());
     se_product4.rating = 4.2;
+    se_product4.stock = 15;
 
     search_engine.add_product(se_product1);
     search_engine.add_product(se_product2);
@@ -282,5 +286,60 @@ fn main() {
     }
 
     println!("\n✅ Motor de busca básico integrado funcionando!");
-    println!("Próximos passos: filtros avançados e recomendações integradas");
+
+    println!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    println!("🎯 Filtros Avançados");
+    println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+    println!("\n💰 Busca por faixa de preço (R$ 200 - R$ 3000):");
+    let price_results = search_engine.search_by_price_range(200.0, 3000.0);
+    for (i, result) in price_results.iter().enumerate() {
+        println!("  {}. {} | R$ {:.2} | Rating: ⭐{:.1}",
+                 i+1, result.product.name, result.product.price, result.product.rating);
+    }
+
+    println!("\n⭐ Busca por produtos com rating >= 4.5:");
+    let rating_results = search_engine.search_by_rating(4.5);
+    for (i, result) in rating_results.iter().enumerate() {
+        println!("  {}. {} | ⭐{:.1} | Estoque: {}",
+                 i+1, result.product.name, result.product.rating, result.product.stock);
+    }
+
+    println!("\n🔍 Busca avançada: 'notebook' em Electronics até R$ 3000:");
+    let advanced_results = search_engine.advanced_search(
+        "notebook",
+        Some(Category::Electronics),
+        None,
+        Some(3000.0)
+    );
+    for (i, result) in advanced_results.iter().enumerate() {
+        println!("  {}. {} | R$ {:.2} | Score: {:.2}",
+                 i+1, result.product.name, result.product.price, result.score);
+    }
+
+    println!("\n🛒 Busca com filtros customizados (apenas produtos em estoque):");
+    let custom_filters = SearchFilters::new()
+        .category(Category::Electronics)
+        .min_rating(4.0)
+        .in_stock_only();
+
+    let filtered_results = search_engine.search_with_filters(None, &custom_filters);
+    for (i, result) in filtered_results.iter().enumerate() {
+        println!("  {}. {} | ⭐{:.1} | 📦{} unidades",
+                 i+1, result.product.name, result.product.rating, result.product.stock);
+    }
+
+    println!("\n🏷️ Busca por tag com filtros:");
+    let tag_filters = SearchFilters::new()
+        .add_tag("laptop".to_string())
+        .price_range(2000.0, 4000.0);
+
+    let tag_results = search_engine.search_with_filters(Some("notebook"), &tag_filters);
+    for (i, result) in tag_results.iter().enumerate() {
+        println!("  {}. {} | R$ {:.2} | Tags: {:?}",
+                 i+1, result.product.name, result.product.price, result.product.tags);
+    }
+
+    println!("\n✅ Sistema de filtros avançados implementado!");
+    println!("Próximo passo: integrar com recomendações do grafo");
 }
