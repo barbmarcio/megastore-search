@@ -307,4 +307,130 @@ impl SearchEngine {
 
         self.search_with_filters(Some(query), &filters)
     }
+
+    pub fn get_recommendations_for_product(&self, product_id: u64, limit: usize) -> Vec<SearchResult> {
+        let recommendations = self.graph.get_recommendations(product_id, limit);
+        let mut results = Vec::new();
+
+        for (rec_id, score) in recommendations {
+            if let Some(product) = self.index.get_product(rec_id) {
+                results.push(SearchResult {
+                    product: product.clone(),
+                    score: score as f64,
+                    match_type: MatchType::Recommendation,
+                });
+            }
+        }
+
+        results
+    }
+
+    pub fn search_with_recommendations(&self, query: &str, include_recommendations: bool, limit: usize) -> Vec<SearchResult> {
+        let mut all_results = Vec::new();
+        let search_results = self.basic_search(query);
+
+        let mut seen_ids = HashSet::new();
+
+        for result in search_results.into_iter().take(limit / 2) {
+            seen_ids.insert(result.product.id);
+            all_results.push(result);
+        }
+
+        if include_recommendations && !all_results.is_empty() {
+            let top_product_id = all_results[0].product.id;
+            let recommendations = self.graph.get_recommendations(top_product_id, limit);
+
+            for (rec_id, rec_score) in recommendations {
+                if !seen_ids.contains(&rec_id) {
+                    if let Some(product) = self.index.get_product(rec_id) {
+                        seen_ids.insert(rec_id);
+                        all_results.push(SearchResult {
+                            product: product.clone(),
+                            score: rec_score as f64 * 0.8,
+                            match_type: MatchType::Recommendation,
+                        });
+                    }
+                }
+            }
+        }
+
+        all_results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
+        all_results.truncate(limit);
+        all_results
+    }
+
+    pub fn search_similar_products(&self, product_id: u64) -> Vec<SearchResult> {
+        let similar_ids = self.graph.get_similar_products(product_id);
+        let mut results = Vec::new();
+
+        for similar_id in similar_ids {
+            if let Some(product) = self.index.get_product(similar_id) {
+                results.push(SearchResult {
+                    product: product.clone(),
+                    score: product.rating as f64,
+                    match_type: MatchType::Recommendation,
+                });
+            }
+        }
+
+        results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
+        results
+    }
+
+    pub fn get_frequently_bought_together(&self, product_id: u64) -> Vec<SearchResult> {
+        let bought_together_ids = self.graph.get_frequently_bought_together(product_id);
+        let mut results = Vec::new();
+
+        for id in bought_together_ids {
+            if let Some(product) = self.index.get_product(id) {
+                results.push(SearchResult {
+                    product: product.clone(),
+                    score: product.rating as f64,
+                    match_type: MatchType::Recommendation,
+                });
+            }
+        }
+
+        results
+    }
+
+    pub fn hybrid_search(&self, query: Option<&str>, filters: &SearchFilters, use_recommendations: bool) -> Vec<SearchResult> {
+        let mut all_results = Vec::new();
+        let mut seen_ids = HashSet::new();
+
+        let filtered_results = self.search_with_filters(query, filters);
+        let top_scores: Vec<(u64, f64)> = filtered_results.iter()
+            .take(3)
+            .map(|r| (r.product.id, r.score))
+            .collect();
+
+        for result in filtered_results.into_iter() {
+            seen_ids.insert(result.product.id);
+            all_results.push(result);
+        }
+
+        if use_recommendations && !top_scores.is_empty() {
+            for (product_id, base_score) in top_scores {
+                let recommendations = self.graph.get_recommendations(product_id, 5);
+
+                for (rec_id, rec_score) in recommendations {
+                    if !seen_ids.contains(&rec_id) {
+                        if let Some(product) = self.index.get_product(rec_id) {
+                            if filters.matches(product) {
+                                seen_ids.insert(rec_id);
+                                all_results.push(SearchResult {
+                                    product: product.clone(),
+                                    score: base_score * 0.5 + rec_score as f64 * 0.5,
+                                    match_type: MatchType::Recommendation,
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        all_results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
+        all_results
+    }
 }

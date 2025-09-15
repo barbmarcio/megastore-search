@@ -341,5 +341,70 @@ fn main() {
     }
 
     println!("\n✅ Sistema de filtros avançados implementado!");
-    println!("Próximo passo: integrar com recomendações do grafo");
+
+    println!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    println!("🔄 Busca Integrada com Recomendações");
+    println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+    search_engine.add_product_relation(1, 4, 0.85, megastore_search::graph::RelationType::Similar);
+    search_engine.add_product_relation(1, 2, 0.75, megastore_search::graph::RelationType::BoughtTogether);
+    search_engine.add_product_relation(2, 4, 0.5, megastore_search::graph::RelationType::SameCategory);
+    search_engine.add_product_relation(2, 3, 0.6, megastore_search::graph::RelationType::BoughtTogether);
+    println!("✓ Relações entre produtos criadas no grafo");
+
+    println!("\n🔍 Busca 'notebook' com recomendações:");
+    let search_with_rec = search_engine.search_with_recommendations("notebook", true, 5);
+    for (i, result) in search_with_rec.iter().enumerate() {
+        println!("  {}. {} | Score: {:.2} | Tipo: {:?}",
+                 i+1, result.product.name, result.score, result.match_type);
+    }
+
+    println!("\n🎯 Produtos similares ao Notebook Dell (ID 1):");
+    let similar = search_engine.search_similar_products(1);
+    for (i, result) in similar.iter().enumerate() {
+        println!("  {}. {} | Rating: ⭐{:.1}",
+                 i+1, result.product.name, result.product.rating);
+    }
+
+    println!("\n🛒 Frequentemente comprados com Notebook Dell:");
+    let bought_together = search_engine.get_frequently_bought_together(1);
+    for (i, result) in bought_together.iter().enumerate() {
+        println!("  {}. {} | R$ {:.2}",
+                 i+1, result.product.name, result.product.price);
+    }
+
+    println!("\n🔥 Busca híbrida: 'notebook' + filtros + recomendações:");
+    let hybrid_filters = SearchFilters::new()
+        .category(Category::Electronics)
+        .price_range(200.0, 4000.0);
+
+    let hybrid_results = search_engine.hybrid_search(
+        Some("notebook"),
+        &hybrid_filters,
+        true
+    );
+
+    for (i, result) in hybrid_results.iter().enumerate().take(5) {
+        let type_emoji = match result.match_type {
+            megastore_search::search::MatchType::Recommendation => "🔗",
+            _ => "🔍"
+        };
+        println!("  {}. {} {} | Score: {:.2} | R$ {:.2}",
+                 i+1, type_emoji, result.product.name, result.score, result.product.price);
+    }
+
+    println!("\n💡 Recomendações diretas para Mouse Gamer (ID 2):");
+    let recommendations = search_engine.get_recommendations_for_product(2, 3);
+    for (i, result) in recommendations.iter().enumerate() {
+        println!("  {}. {} | Score de recomendação: {:.2}",
+                 i+1, result.product.name, result.score);
+    }
+
+    println!("\n✅ Sistema completo de busca com recomendações integrado!");
+    println!("\n📊 Resumo do Sistema:");
+    println!("  • Indexação HashMap: O(1) para busca direta");
+    println!("  • Grafo de recomendações: O(E) para conexões diretas");
+    println!("  • Busca híbrida: Combina relevância textual + relações");
+    println!("  • Filtros avançados: Múltiplos critérios simultâneos");
+    println!("  • Score final: Pondera busca (50%) + recomendação (50%)");
 }
